@@ -37,7 +37,7 @@ const LandingPage = () => {
                 Kabarak's premier lost and found platform. Report, search, and retrieve your lost items with ease.
               </p>
               <div className="flex space-x-4">
-                <button onClick={handleAuthClick} className="btn-primary bg-white text-[#800020]">
+                <button onClick={handleAuthClick} className="btn-primary bg-[#2E8B57] hover:bg-[#236B42] text-white">
                   Report Lost Item
                 </button>
                 <button className="btn-primary border-2">
@@ -52,9 +52,9 @@ const LandingPage = () => {
               className="relative"
             >
               <img
-                src="https://images.unsplash.com/photo-1579548122080-c35fd6820ecb?auto=format&fit=crop&w=800"
-                alt="Lost and Found"
-                className="rounded-2xl shadow-2xl"
+                src="https://www.educationnews.co.ke/wp-content/uploads/2024/10/Kabarak-University.-Photo-Courtesy.jpg"
+                alt="Kabarak University"
+                className="rounded-2xl shadow-2xl object-cover h-full w-full"
               />
             </motion.div>
           </div>
@@ -121,7 +121,7 @@ const LandingPage = () => {
           <p className="text-lg mb-8">Join our platform and let us help you recover what's lost.</p>
           <button
             onClick={handleAuthClick}
-            className="btn-primary bg-white text-[#800020] inline-flex items-center"
+            className="btn-primary bg-[#2E8B57] hover:bg-[#236B42] text-white inline-flex items-center"
           >
             Get Started <ArrowRight className="ml-2" />
           </button>
