@@ -85,47 +85,57 @@ const Dashboard = () => {
   );
 
   const ItemCard = ({ item }: { item: Item }) => (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4">
-      <div className="aspect-w-16 aspect-h-9 mb-4">
+    <div className="bg-white rounded-xl shadow p-4">
+      <div className="relative">
         <img
           src={item.image_url || 'https://via.placeholder.com/500x300'}
           alt={item.title}
-          className="rounded-lg object-cover w-full h-full"
+          className="w-full h-48 object-cover rounded-lg mb-4"
         />
+        <span className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
+          item.type === 'found' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {item.type === 'found' ? 'Found' : 'Lost'}
+        </span>
       </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg">{item.title}</h3>
-          <span className={`px-2 py-1 rounded-full text-xs ${
-            item.type === 'found' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}>
-            {item.type === 'found' ? 'Found' : 'Lost'}
-          </span>
-        </div>
-        <p className="text-gray-600 text-sm line-clamp-2">{item.description}</p>
+
+      <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
+      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
+
+      <div className="space-y-2 mb-4">
         <div className="flex items-center text-gray-500 text-sm">
-          <MapPin className="w-4 h-4 mr-1" />
+          <MapPin className="w-4 h-4 mr-2" />
           {item.location}
         </div>
         <div className="flex items-center text-gray-500 text-sm">
-          <Calendar className="w-4 h-4 mr-1" />
+          <Calendar className="w-4 h-4 mr-2" />
           {format(new Date(item.date), 'MMM d, yyyy')}
         </div>
-        {item.type === 'lost' && item.reward && (
-          <div className="text-[#800020] font-medium">
-            Reward: {item.reward}
-          </div>
-        )}
-        <button
-          onClick={() => {
-            setSelectedItem(item);
-            setShowClaimModal(true);
-          }}
-          className="w-full mt-2 px-4 py-2 bg-[#800020] text-white rounded-lg hover:bg-[#600018] transition-colors"
-        >
-          {item.type === 'found' ? 'Claim Item' : 'Contact Owner'}
-        </button>
       </div>
+
+      <button
+        onClick={() => {
+          setSelectedItem(item);
+          setShowClaimModal(true);
+        }}
+        className={`w-full px-4 py-2 rounded-lg flex items-center justify-center ${
+          item.type === 'lost'
+            ? 'bg-[#800020] text-white hover:bg-[#600018]'
+            : 'border-2 border-[#2E8B57] text-[#2E8B57] hover:bg-[#2E8B57] hover:text-white'
+        }`}
+      >
+        {item.type === 'lost' ? (
+          <>
+            <CheckCircle className="w-5 h-5 mr-2" />
+            I Found This
+          </>
+        ) : (
+          <>
+            <Eye className="w-5 h-5 mr-2" />
+            Claim Item
+          </>
+        )}
+      </button>
     </div>
   );
 
