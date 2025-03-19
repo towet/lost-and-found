@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, Filter, MapPin, Calendar,
@@ -7,27 +6,64 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { getItems } from '../services/itemService';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Item } from '../types/item';
+import { getItems, searchItems, deleteItem } from '../services/itemService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = React.useState('all');
-  const [showReportTypeModal, setShowReportTypeModal] = React.useState(false);
-  const [showClaimModal, setShowClaimModal] = React.useState(false);
-  const [selectedItem, setSelectedItem] = React.useState<Item | null>(null);
-  const [items, setItems] = React.useState<Item[]>([]);
+  const [activeTab, setActiveTab] = useState('all');
+  const [showReportTypeModal, setShowReportTypeModal] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [items, setItems] = useState<Item[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    fetchItems();
+    loadItems();
   }, []);
 
-  const fetchItems = async () => {
+  const loadItems = async () => {
     try {
+      console.log('Loading items...');
       const fetchedItems = await getItems();
+      console.log('Items loaded:', fetchedItems);
       setItems(fetchedItems);
     } catch (error) {
-      console.error('Error fetching items:', error);
+      console.error('Error loading items:', error);
+    }
+  };
+
+  const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    setIsSearching(true);
+
+    try {
+      if (query.trim()) {
+        const results = await searchItems(query);
+        setItems(results);
+      } else {
+        await loadItems(); // Reload all items when search is cleared
+      }
+    } catch (error) {
+      console.error('Error searching items:', error);
+    }
+
+    setIsSearching(false);
+  };
+
+  const handleDelete = async (item: Item) => {
+    try {
+      console.log('Attempting to delete item:', item);
+      await deleteItem(item.id);
+      console.log('Item deleted, updating state...');
+      // Update local state immediately
+      setItems(prevItems => prevItems.filter(i => i.id !== item.id));
+      setShowClaimModal(false);
+    } catch (error) {
+      console.error('Error deleting item:', error);
     }
   };
 
@@ -144,14 +180,14 @@ const Dashboard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 md:p-6"
       onClick={() => setShowClaimModal(false)}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-2xl p-6 max-w-lg w-full mx-4"
+        className="bg-white rounded-2xl p-6 w-full max-w-[800px] max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center mb-6">
@@ -166,53 +202,83 @@ const Dashboard = () => {
         </div>
 
         <div className="space-y-6">
-          <div>
-            <img
-              src={item.image_url || 'https://via.placeholder.com/500x300'}
-              alt={item.title}
-              className="rounded-lg w-full"
-            />
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-            <p className="text-gray-600">{item.description}</p>
-          </div>
-
-          {item.type === 'found' && item.claim_requirements && item.claim_requirements.length > 0 && (
-            <div>
-              <h4 className="font-medium mb-2">Claim Requirements</h4>
-              <ul className="list-disc list-inside space-y-1">
-                {item.claim_requirements.map((req: string, index: number) => (
-                  <li key={index} className="text-gray-600">{req}</li>
-                ))}
-              </ul>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="w-full md:w-1/2">
+              <img
+                src={item.image_url || 'https://via.placeholder.com/500x300'}
+                alt={item.title}
+                className="rounded-lg w-full h-[300px] object-cover"
+              />
             </div>
-          )}
+            <div className="w-full md:w-1/2 space-y-6">
+              <div>
+                <h3 className="font-semibold text-xl mb-2">{item.title}</h3>
+                <p className="text-gray-600">{item.description}</p>
+              </div>
 
-          <div>
-            <h4 className="font-medium mb-2">Contact Information</h4>
-            <div className="space-y-2">
-              {item.contact_info && (
-                <>
+              {item.type === 'found' && item.claim_requirements && item.claim_requirements.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Claim Requirements</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    {item.claim_requirements.map((req: string, index: number) => (
+                      <li key={index} className="text-gray-600">{req}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div>
+                <h4 className="font-medium mb-2">Contact Information</h4>
+                <div className="space-y-2">
+                  {item.contact_info && (
+                    <>
+                      <div className="flex items-center text-gray-600">
+                        <Mail className="w-4 h-4 mr-2" />
+                        <a 
+                          href={`https://mail.google.com/mail/?view=cm&fs=1&to=${item.contact_info.department}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {item.contact_info.department}
+                        </a>
+                      </div>
+                    </>
+                  )}
                   <div className="flex items-center text-gray-600">
                     <Mail className="w-4 h-4 mr-2" />
-                    {item.contact_info.department}
+                    <a 
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${item.user_email}&su=${encodeURIComponent(`Regarding your ${item.type} item: ${item.title}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {item.user_email}
+                    </a>
                   </div>
-                </>
-              )}
-              <div className="flex items-center text-gray-600">
-                <Mail className="w-4 h-4 mr-2" />
-                {item.user_email}
+                  <button
+                    onClick={() => window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${item.user_email}&su=${encodeURIComponent(`Regarding your ${item.type} item: ${item.title}`)}`, '_blank')}
+                    className="mt-4 w-full flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                  >
+                    <Mail className="w-5 h-5 mr-2" />
+                    Contact
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-end mt-6 space-x-4">
+          <button
+            onClick={() => handleDelete(item)}
+            className="px-4 py-2 bg-[#2E8B57] text-white rounded-lg hover:bg-[#236B42]"
+          >
+            Mark as Retrieved
+          </button>
           <button
             onClick={() => setShowClaimModal(false)}
-            className="px-4 py-2 bg-[#800020] text-white rounded-lg hover:bg-[#600018]"
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
             Close
           </button>
@@ -252,8 +318,15 @@ const Dashboard = () => {
             <input
               type="text"
               placeholder="Search for items..."
-              className="input-field pl-10"
+              className="input-field pl-10 w-full"
+              value={searchQuery}
+              onChange={handleSearch}
             />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#800020] border-t-transparent"></div>
+              </div>
+            )}
           </div>
           <button className="btn-primary bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
             <Filter className="mr-2" /> Filters

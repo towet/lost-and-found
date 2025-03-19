@@ -26,6 +26,11 @@ create policy "Authenticated users can insert their own items"
   on public.items for insert
   with check ( auth.role() = 'authenticated' );
 
+-- Create policy to allow users to delete items
+create policy "Anyone can delete items"
+  on public.items for delete
+  using ( true );
+
 -- Create storage bucket for item images
 insert into storage.buckets (id, name, public) values ('item-images', 'item-images', true);
 

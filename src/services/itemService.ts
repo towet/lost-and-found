@@ -51,15 +51,18 @@ export const createItem = async (
 };
 
 export const getItems = async (): Promise<Item[]> => {
+  console.log('Fetching items...');
   const { data, error } = await supabase
     .from('items')
     .select('*')
     .order('created_at', { ascending: false });
 
   if (error) {
+    console.error('Error fetching items:', error);
     throw new Error(error.message);
   }
 
+  console.log('Items fetched:', data);
   return data || [];
 };
 
@@ -75,4 +78,34 @@ export const getItemsByType = async (type: 'lost' | 'found'): Promise<Item[]> =>
   }
 
   return data || [];
+};
+
+export const searchItems = async (query: string): Promise<Item[]> => {
+  const { data, error } = await supabase
+    .from('items')
+    .select('*')
+    .or(`title.ilike.%${query}%,description.ilike.%${query}%,location.ilike.%${query}%`)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data || [];
+};
+
+export const deleteItem = async (itemId: string): Promise<void> => {
+  console.log('Deleting item with ID:', itemId);
+  const { error } = await supabase
+    .from('items')
+    .delete()
+    .eq('id', itemId)
+    .single(); 
+
+  if (error) {
+    console.error('Error deleting item:', error);
+    throw new Error(error.message);
+  }
+
+  console.log('Item deleted successfully');
 };
